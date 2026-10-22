@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { desc, eq, lt } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { adminSessions, catalogItems } from "../../db/schema.js";
@@ -8,8 +8,10 @@ import { adminSessions, catalogItems } from "../../db/schema.js";
 const SESSION_COOKIE = "itech_admin";
 const SESSION_LIFETIME_SECONDS = 12 * 60 * 60;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-// The owner can override this by setting ADMIN_PASSWORD in the Netlify environment variables.
-const DEFAULT_ADMIN_PASSWORD = "Itechfix";
+// Salted scrypt hash ("salt:hash") of the admin password, so the password itself never appears in this public repo.
+// The owner can override it by setting ADMIN_PASSWORD in the Netlify environment variables.
+const ADMIN_PASSWORD_HASH =
+  "43fd94e6936759a6db979ff24101eefd:0870877787f868c484cc3d71c401dcf3283d603842daeea69132b763af7674cfd9fba3e649b6f584bdb37449af46d677de9e9553c67750858ad37867e1b0cc0f";
 
 const ALLOWED_CATEGORIES = new Set([
   "home-showcase",
@@ -91,11 +93,18 @@ function sessionCookie(token: string, maxAge: number) {
   return `${SESSION_COOKIE}=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${maxAge}`;
 }
 
+function passwordMatches(password: string) {
+  if (process.env.ADMIN_PASSWORD) {
+    return timingSafeEqual(sha256(password), sha256(process.env.ADMIN_PASSWORD));
+  }
+  const [salt, hash] = ADMIN_PASSWORD_HASH.split(":");
+  return timingSafeEqual(scryptSync(password, salt, 64), Buffer.from(hash, "hex"));
+}
+
 async function login(req: Request) {
   const data = await req.json().catch(() => null);
   const password = data && typeof data.password === "string" ? data.password : "";
-  const expected = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
-  if (!timingSafeEqual(sha256(password), sha256(expected))) {
+  if (!passwordMatches(password)) {
     return json({ error: "Password is incorrect." }, 401);
   }
   await db.delete(adminSessions).where(lt(adminSessions.expiresAt, new Date()));
