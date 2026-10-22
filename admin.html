@@ -9,7 +9,10 @@
     * { box-sizing: border-box; }
     body { min-height: 100vh; margin: 0; background: radial-gradient(ellipse at top right, #e3edff 0, transparent 35%), #f1f5fb; }
     header { min-height: 76px; padding: 16px max(20px, calc((100% - 1120px) / 2)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: linear-gradient(115deg, #0d1b31, #17385e); color: white; box-shadow: 0 8px 24px #11233a24; }
-    header h1 { margin: 0; font-size: 20px; letter-spacing: .02em; }
+    header h1 { margin: 0 auto 0 0; font-size: 20px; letter-spacing: .02em; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .listing-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 18px; }
+    .listing-filters select, .listing-filters input { width: auto; flex: 1 1 200px; margin: 0; }
     main { width: min(1120px, calc(100% - 32px)); margin: 34px auto 60px; }
     .panel { background: #fff; border: 1px solid #e0e8f2; border-radius: 16px; padding: 26px; margin-bottom: 22px; box-shadow: 0 12px 34px #1935570c; }
     .panel h2 { margin: 0 0 18px; font-size: 21px; letter-spacing: -.02em; }
@@ -51,7 +54,16 @@
     .badge { display: inline-block; border-radius: 20px; background: #eaf2ff; color: #1657a7; padding: 5px 10px; margin-bottom: 5px; font-size: 11px; font-weight: 700; }
     [hidden] { display: none !important; }
     @media (max-width: 650px) {
+      header { flex-wrap: wrap; padding: 14px 16px; }
+      header h1 { font-size: 17px; flex: 1 1 100%; }
+      .header-actions { width: 100%; }
+      .header-actions > * { flex: 1 1 0; text-align: center; }
+      main { width: calc(100% - 24px); margin: 20px auto 40px; }
+      .panel { padding: 18px; border-radius: 14px; }
       .fields { grid-template-columns: 1fr; }
+      .toolbar h2 { flex: 1 1 100%; }
+      .listing-actions button { flex: 1 1 0; }
+      button, .button-link { min-height: 44px; }
       .wide { grid-column: auto; }
       .dashboard-hero { align-items: flex-start; flex-direction: column; padding: 24px; }
       .listing { grid-template-columns: 64px minmax(0, 1fr); }
@@ -66,8 +78,10 @@
 <body>
   <header>
     <h1>ITECH Fix · Catalog Admin</h1>
-    <a class="button-link secondary" href="index.html">View storefront</a>
-  <button id="logout-button" class="secondary" type="button" hidden>Sign out</button>
+    <div class="header-actions">
+      <a class="button-link secondary" href="/">View storefront</a>
+      <button id="logout-button" class="secondary" type="button" hidden>Sign out</button>
+    </div>
   </header>
   <main>
   <section id="login-panel" class="panel" hidden>
@@ -90,7 +104,7 @@
         </div>
         <div class="dashboard-hero-actions">
           <span id="dashboard-count" class="badge">Loading listings</span>
-          <span id="editor-label" class="badge">Local editor</span>
+          <span id="editor-label" class="badge">Live catalog</span>
         </div>
       </section>
       <div class="panel">
@@ -142,6 +156,16 @@
         <div class="toolbar">
           <h2>All products and services</h2>
         </div>
+        <div class="listing-filters">
+          <select id="listing-filter" aria-label="Filter listings by section">
+            <option value="">All sections</option>
+            <option value="laptop-sales,laptop-repairs">Laptops page</option>
+            <option value="phone-sales,phone-repairs,phone-parts">Phones page</option>
+            <option value="gadgets">Gadgets page</option>
+            <option value="home-showcase">Homepage highlights</option>
+          </select>
+          <input id="listing-search" type="search" placeholder="Search listings" aria-label="Search listings" />
+        </div>
         <button id="server-retry" class="secondary" type="button" hidden>Try again</button>
         <div id="listing-list" aria-live="polite"></div>
       </section>
@@ -149,6 +173,6 @@
   </main>
   <script src="supabase-config.js?v=1"></script>
   <script src="supabase-client.js?v=1"></script>
-  <script src="admin.js?v=8"></script>
+  <script src="admin.js?v=9"></script>
 </body>
 </html>

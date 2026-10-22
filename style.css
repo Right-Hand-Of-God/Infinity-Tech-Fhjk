@@ -1828,3 +1828,30 @@ a {
     gap: 2px;
   }
 }
+/* Global responsive safeguards */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+img,
+iframe,
+video {
+  max-width: 100%;
+}
+
+.product-card,
+.service-card,
+.showcase-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .footer-admin-link {
+    width: 100%;
+    justify-content: center;
+    min-height: 46px;
+  }
+}
