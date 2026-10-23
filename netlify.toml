@@ -1,0 +1,7 @@
+[build]
+  # Publish only the storefront files, keeping server code, the local database, and dependencies private.
+  command = "mkdir -p dist && cp *.html *.css *.js *.jpg *.jpeg dist/"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"

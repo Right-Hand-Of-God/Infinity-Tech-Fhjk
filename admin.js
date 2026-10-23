@@ -9,6 +9,7 @@ const itemForm = document.getElementById('item-form');
 const listingList = document.getElementById('listing-list');
 const formMessage = document.getElementById('form-message');
 let editingId = null;
+let allItems = [];
 
 const categoryNames = {
   'phone-sales': 'Phone sales',
@@ -25,7 +26,7 @@ async function api(path, options = {}) {
   try {
     response = await fetch(path, { credentials: 'same-origin', ...options });
   } catch {
-    throw new Error('The local server is unavailable. Start it with start-local.bat and try again.');
+    throw new Error('The catalog server could not be reached. Check your connection and try again.');
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Request failed (${response.status}).`);
@@ -45,19 +46,12 @@ async function initialize() {
     useSupabase ? 'Password' : 'Administrator password';
   document.getElementById('login-help').textContent = useSupabase
     ? 'Sign in with your authorized administrator email and password.'
-    : 'Sign in with the local administrator password to manage catalog listings.';
+    : 'Sign in with the administrator password to manage catalog listings.';
   if (window.location.protocol === 'file:' && !useSupabase) {
     loginPanel.hidden = false;
     loginForm.hidden = true;
     loginMessage.textContent =
       'The admin page was opened as a file, so it cannot reach the catalog. Start the local server with start-local.bat, then open http://127.0.0.1:8765/admin.';
-    return;
-  }
-  if (!useSupabase && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-    showLogin(
-      'The online catalog is not configured. Add your Supabase project URL and anon key to supabase-config.js.'
-    );
-    loginForm.hidden = true;
     return;
   }
   try {
@@ -96,7 +90,7 @@ async function showDashboard() {
   dashboard.hidden = false;
   logoutButton.hidden = false;
   document.getElementById('editor-label').textContent =
-    supabase.isConfigured() ? 'Supabase catalog' : 'Local editor';
+    supabase.isConfigured() ? 'Supabase catalog' : 'Live catalog';
   try {
     await refreshListings();
   } catch (error) {
@@ -144,16 +138,28 @@ logoutButton.addEventListener('click', async () => {
 });
 
 async function refreshListings() {
-  const items = supabase.isConfigured()
+  allItems = supabase.isConfigured()
     ? await supabase.fetchItems(true)
     : await api('/api/admin/items');
-  listingList.replaceChildren();
   document.getElementById('dashboard-count').textContent =
-    `${items.length} ${items.length === 1 ? 'listing' : 'listings'}`;
+    `${allItems.length} ${allItems.length === 1 ? 'listing' : 'listings'}`;
+  renderListings();
+}
+
+function renderListings() {
+  const sections = document.getElementById('listing-filter').value.split(',').filter(Boolean);
+  const query = document.getElementById('listing-search').value.trim().toLowerCase();
+  const items = allItems.filter(item =>
+    (!sections.length || sections.includes(item.category)) &&
+    (!query || [item.title, item.model, item.description].join(' ').toLowerCase().includes(query))
+  );
+  listingList.replaceChildren();
   if (!items.length) {
     const message = document.createElement('p');
     message.className = 'hint';
-    message.textContent = 'No listings yet. Add one above to publish it to the matching storefront section.';
+    message.textContent = allItems.length
+      ? 'No listings match this filter.'
+      : 'No listings yet. Add one above to publish it to the matching storefront section.';
     listingList.append(message);
     return;
   }
@@ -257,6 +263,8 @@ function resetEditor() {
 }
 
 document.getElementById('category').addEventListener('change', syncEditorForCategory);
+document.getElementById('listing-filter').addEventListener('change', renderListings);
+document.getElementById('listing-search').addEventListener('input', renderListings);
 
 document.getElementById('server-retry').addEventListener('click', initialize);
 async function uploadImage(file) {
